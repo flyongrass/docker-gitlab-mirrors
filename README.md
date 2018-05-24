@@ -90,33 +90,24 @@ Then you can
 
 ## Example configuration using docker-compose
 Here's an example `docker-compose.yml` to simplify interacting with *docker-gitlab-mirrors*.
-```
+```dockerfile
 version: '2'
 
 services:
   gitlab-mirrors:
+    build: .
     image: quay.io/klowner/gitlab-mirrors:latest
     volumes:
-      - /srv/gitlab-mirrors/config:/config
-      - /srv/gitlab-mirrors/data:/data
+    - /srv/docker/gitlab-mirrors/config:/config:Z
+    - /srv/docker/gitlab-mirrors/data:/data:Z
     environment:
-      - GITLAB_MIRROR_UID=1000
-      - GITLAB_MIRROR_GITLAB_USER=mark
-      - GITLAB_MIRROR_GITLAB_NAMESPACE=mirrors
-      - GITLAB_MIRROR_GITLAB_URL=http://gitlab
-    external_links:
-      - gitlab:gitlab
-    networks:
-      - gitlab_front
-
-networks:
-  gitlab_front:
-    external:
-      name: gitlab_front
+    - GITLAB_MIRROR_UID=1000
+    - GITLAB_MIRROR_GITLAB_USER=user
+    - GITLAB_MIRROR_GITLAB_NAMESPACE=Mirros
+    - GITLAB_MIRROR_GITLAB_URL=http://ip:port/gitlab/
 ```
 - My `/config` and `/data` volumes are stored on the docker host's `/srv/gitlab-mirrors` directory.
-- The `external_links` specifies the name of my running `gitlab` container, this matches the `GITLAB_MIRROR_GITLAB_URL=http://gitlab`.
-- `gitlab_front` is a named Docker network, this is added so the `docker-gitlab-mirrors` container can connect to the `gitlab` container.
+- The `external_links` specifies the name of my running `gitlab` container, this matches the `GITLAB_MIRROR_GITLAB_URL=http://ip:port/gitlab/`
 
 Using the above example, you can run the container via `docker-compose` without the necessity to provide configuration options repeatedly.
 
@@ -134,7 +125,32 @@ Available options:
 ```
 Run some commands!
 
+Here is some example commands
+
+```bash
+# SSH Test
+docker-compose run --rm gitlab-mirrors run ssh -T -p port git@gitlab.example.com
+# Add mirrors
+docker-compose run --rm gitlab-mirrors add --git --project-name test --mirror http://username:passwd@ip:port/gitlab-project.git
+# Delete mirrors
+docker-compose run --rm gitlab-mirrors delete -d test
+```
+
+## Example /config
+
+```markdown
+[~]ls -a /srv/docker/gitlab-mirrors/config
+private_token  .ssh
+[~]ls -la /srv/docker/gitlab-mirrors/config/.ssh
+drwx------ 2 1000 1000   54 5月  22 19:48 .
+drwxr-sr-x 3 1000 1000   51 5月  22 19:40 ..
+-rw------- 1 1000 1000 1679 5月  22 19:28 id_rsa
+-rw-r--r-- 1 1000 1000  402 5月  22 19:28 id_rsa.pub
+-rw-r--r-- 1 1000 1000  213 5月  22 19:30 known_hosts
+```
+
 ## Example .ssh/config
+
 After running `config` your `/config` volume will be populated with some starter files. You can provide additional configuration settings by customizing the `/config/.ssh/config`. Here's something similar to what I use, you should be able to adapt it to your needs.
 ```
 Host gitlab.example.com
